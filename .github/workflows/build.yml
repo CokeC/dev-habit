@@ -15,7 +15,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: /
+        working-directory: DevHabit.Api
 
     steps:
       - uses: actions/checkout@v4
@@ -26,13 +26,13 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Restore
-        run: dotnet restore Solution'DevHabit'.slnx
+        run: dotnet restore DevHabit.Api.csproj
 
       - name: Build
-        run: dotnet build Solution'DevHabit'.slnx --configuration Release --no-restore
+        run: dotnet build DevHabit.Api.csproj --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test Solution'DevHabit'.slnx --configuration Release --no-restore --no-build
+        run: dotnet test DevHabit.Api.csproj --configuration Release --no-restore --no-build
 
       - name: Publish
-        run: dotnet publish Solution'DevHabit'.slnx --configuration Release --no-restore --no-build
+        run: dotnet publish DevHabit.Api.csproj --configuration Release --no-restore --no-build
