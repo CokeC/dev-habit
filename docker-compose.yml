@@ -16,6 +16,17 @@ services:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://devhabit.aspire-dashboard:18889
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
 
+  devhabit.postgres:
+    image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/postgres:18.4
+    environment:
+      POSTGRES_DB: devhabit
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./.containers/postgres_data:/var/lib/postgresql
+    ports:
+      - 5432:5432
+
   devhabit.seq:
     image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/datalust/seq:2025.2
     environment:
@@ -33,3 +44,11 @@ services:
       DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: true
     ports:
       - 18888:18888
+
+  pgadmin:
+    image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/dpage/pgadmin4:9.15.0
+    environment:
+      PGADMIN_DEFAULT_EMAIL: user@domain.com
+      PGADMIN_DEFAULT_PASSWORD: StrongPassword
+    ports:
+      - 5050:80

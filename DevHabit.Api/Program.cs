@@ -1,39 +1,25 @@
-using OpenTelemetry;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
+using DevHabit.Api;
+using DevHabit.Api.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-builder.Services.AddControllers();
-
-builder.Services.AddOpenApi();
-
-builder.Services.AddOpenTelemetry()
-    .ConfigureResource(b => b.AddService(builder.Environment.ApplicationName))
-    .WithTracing(b => b.AddHttpClientInstrumentation()
-        .AddAspNetCoreInstrumentation())
-    .WithMetrics(b => b.AddHttpClientInstrumentation()
-        .AddAspNetCoreInstrumentation()
-        .AddRuntimeInstrumentation())
-    .UseOtlpExporter();
-
-builder.Logging.AddOpenTelemetry(opt =>
-{
-    opt.IncludeScopes = true;
-    opt.IncludeFormattedMessage = true;
-});
+builder.AddApiServices()
+    .AddErrorHandling()
+    .AddDatabase()
+    .AddObservability()
+    .AddApplicationServices();
 
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    await app.ApplyMigrationsAsync();//在生产环境中不使用此方法进行数据库迁移
 }
 
 app.UseHttpsRedirection();
 
+app.UseExceptionHandler();
 
 app.MapControllers();
 

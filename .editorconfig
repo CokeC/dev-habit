@@ -257,6 +257,9 @@ dotnet_diagnostic.CA1000.severity = none
 # CA1001: Do not expose generic lists
 dotnet_diagnostic.CA1001.severity = none
 
+# CA1002: 不要公开泛型列表
+dotnet_diagnostic.CA1002.severity = suggestion
+
 # CA1008: Enums should have zero value
 dotnet_diagnostic.CA1008.severity = none
 
@@ -346,6 +349,9 @@ dotnet_diagnostic.CA1848.severity = none
 
 # CA1860: Avoid using 'Enumerale.Any()' extension method
 dotnet_diagnostic.CA1860.severity = none
+
+# CA1862: 首选使用StringComparison.枚举值来执行不区分大小写的比较
+dotnet_diagnostic.CA1862.severity = suggestion
 
 # CA2007: Consider calling ConfigureAwait on the awaited task
 dotnet_diagnostic.CA2007.severity = none
