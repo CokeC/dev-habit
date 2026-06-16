@@ -5,6 +5,7 @@ using DevHabit.Api.Middleware;
 using DevHabit.Api.Services;
 using DevHabit.Api.Services.Sorting;
 using FluentValidation;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
@@ -74,13 +75,21 @@ public static class DependencyInjection
 
     public static WebApplicationBuilder AddDatabase(this WebApplicationBuilder builder)
     {
+        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
         builder.Services.AddDbContext<ApplicationDbContext>(opt =>
         {
-            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
             opt.UseNpgsql(connectionString, npgsqlOpt =>
                     npgsqlOpt.MigrationsHistoryTable(HistoryRepository.DefaultTableName, Schemas.Application))
                 .UseSnakeCaseNamingConvention();
         });
+
+        builder.Services.AddDbContext<AppIdentityDbContext>(opt =>
+        {
+            opt.UseNpgsql(connectionString, npgsqlOpt =>
+                    npgsqlOpt.MigrationsHistoryTable(HistoryRepository.DefaultTableName, Schemas.Identity))
+                .UseSnakeCaseNamingConvention();
+        });
+
         return builder;
     }
 
@@ -113,6 +122,14 @@ public static class DependencyInjection
         builder.Services.AddTransient<DataShapingService>();
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddTransient<LinkService>();
+        return builder;
+    }
+
+    public static WebApplicationBuilder AddAuthenticationServices(this WebApplicationBuilder builder)
+    {
+        builder.Services
+            .AddIdentity<IdentityUser, IdentityRole>()//指定用户类型和角色类型
+            .AddEntityFrameworkStores<AppIdentityDbContext>();
         return builder;
     }
 }

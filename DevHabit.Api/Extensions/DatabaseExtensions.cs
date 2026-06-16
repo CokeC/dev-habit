@@ -9,10 +9,14 @@ public static class DatabaseExtensions
     {
         using var scope = app.Services.CreateScope();
         await using var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        await using var idDbContext = scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
         try
         {
             await dbContext.Database.MigrateAsync();
-            app.Logger.LogInformation("数据库迁移成功！");
+            app.Logger.LogInformation("应用程序数据库迁移成功！");
+
+            await idDbContext.Database.MigrateAsync();
+            app.Logger.LogInformation("身份数据库迁移成功！");
         }
         catch (Exception ex)
         {
