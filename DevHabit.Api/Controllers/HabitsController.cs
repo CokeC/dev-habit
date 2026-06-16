@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using System.Dynamic;
 using System.Linq.Expressions;
+using System.Net.Mime;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace DevHabit.Api.Controllers;
@@ -20,6 +21,12 @@ namespace DevHabit.Api.Controllers;
 [Route("habits")]
 [ApiController]
 [ApiVersion(1.0)]
+[Produces(MediaTypeNames.Application.Json,
+    CustomMediaTypeNames.Application.JsonV1,
+    CustomMediaTypeNames.Application.JsonV2,
+    CustomMediaTypeNames.Application.HateoasJson,
+    CustomMediaTypeNames.Application.HateoasJsonV1,
+    CustomMediaTypeNames.Application.HateoasJsonV2)]
 public sealed class HabitsController(ApplicationDbContext dbContext, LinkService linkService) : ControllerBase
 {
     
@@ -58,17 +65,15 @@ public sealed class HabitsController(ApplicationDbContext dbContext, LinkService
         var habits = await habitDtos
             .Skip((query.Page - 1) * query.PageSize)
             .Take(query.PageSize).ToListAsync();
-
-        var includeLinks = query.Accept == CustomMediaTypeNames.Application.HateoasJson;
-
+                
         var paginationResult = new PaginationResult<ExpandoObject>
         {
-            Items = shapingService.ShapeCollectionData(habits, query.Fields, includeLinks ? h => CreateLinksForHabit(h.Id, query.Fields) : null),
+            Items = shapingService.ShapeCollectionData(habits, query.Fields, query.IncludeLinks ? h => CreateLinksForHabit(h.Id, query.Fields) : null),
             Page = query.Page,
             PageSize = query.PageSize,
             TotalCount = totalCount
         };
-        if(includeLinks)
+        if(query.IncludeLinks)
             paginationResult.Links = CreateLinksForHabits(query, paginationResult.HasNextPage, paginationResult.HasPreviousPage);
 
         //var paginationResult = await PaginationResult<HabitDto>.CreateAsync(habitDtos, query.Page, query.PageSize);
@@ -77,22 +82,22 @@ public sealed class HabitsController(ApplicationDbContext dbContext, LinkService
 
     [HttpGet("{id}")]
     //[MapToApiVersion(1.0)]
-    public async Task<IActionResult> GetHabit(string id, string? fields, [FromHeader(Name = "Accept")] string? accept, DataShapingService shapingService)
+    public async Task<IActionResult> GetHabit(string id, [FromQuery] HabitsQueryParameters query, DataShapingService shapingService)
     {
-        if (!shapingService.Validate<HabitDto>(fields))
+        if (!shapingService.Validate<HabitDto>(query.Fields))
             return Problem(statusCode: StatusCodes.Status400BadRequest,
-                detail: $"塑形参数不合规：{fields}");
+                detail: $"塑形参数不合规：{query.Fields}");
 
         var habit = await dbContext.Habits.Where(e => e.Id == id).Select(e => e.ToHabitWithTagsDto()).FirstOrDefaultAsync();
         
         if (habit is null)
             return NotFound();
 
-        var shapedHabitDto = shapingService.ShapeData(habit, fields);
+        var shapedHabitDto = shapingService.ShapeData(habit, query.Fields);
 
-        if(accept == CustomMediaTypeNames.Application.HateoasJson)
+        if(query.IncludeLinks)
         {
-            var links = CreateLinksForHabit(id, fields);
+            var links = CreateLinksForHabit(id, query.Fields);
 
             shapedHabitDto.TryAdd("links", links);
         }
