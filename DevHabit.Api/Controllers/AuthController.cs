@@ -1,6 +1,7 @@
 ﻿using DevHabit.Api.Database;
 using DevHabit.Api.DTOs.Auth;
 using DevHabit.Api.DTOs.Users;
+using DevHabit.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -13,10 +14,10 @@ namespace DevHabit.Api.Controllers;
 [Route("auth")]
 [ApiController]
 [AllowAnonymous]
-public sealed class AuthController(UserManager<IdentityUser> userManager, ApplicationDbContext appDbContext, AppIdentityDbContext IdDbContext) : ControllerBase
+public sealed class AuthController(UserManager<IdentityUser> userManager, ApplicationDbContext appDbContext, AppIdentityDbContext IdDbContext, TokenProvider tokenProvider) : ControllerBase
 {
     [HttpPost("register")]
-    public async Task<IActionResult> Register(RegisterUserDto request)
+    public async Task<ActionResult<AccessTokensDto>> Register(RegisterUserDto request)
     {
         //创建事务，保证两个数据库同时成功、同时失败
         using IDbContextTransaction transaction = await IdDbContext.Database.BeginTransactionAsync();
@@ -56,6 +57,21 @@ public sealed class AuthController(UserManager<IdentityUser> userManager, Applic
 
         await transaction.CommitAsync();//如果不调用，所有更改均回滚
 
-        return Ok(user.Id);
+        var tokenRequest = new TokenRequest(identityUser.Id, identityUser.Email);
+        var accessTokens = tokenProvider.Create(tokenRequest);
+
+        return Ok(accessTokens);
+    }
+
+    [HttpPost("login")]
+    public async Task<ActionResult<AccessTokensDto>> Login(LoginUserDto request)
+    {
+        var identityUser = await userManager.FindByEmailAsync(request.Email);
+        if (identityUser == null || !await userManager.CheckPasswordAsync(identityUser, request.Password))
+            return Unauthorized();
+        var tokenRequest = new TokenRequest(identityUser.Id, request.Email);
+        var accessTokens = tokenProvider.Create(tokenRequest);
+
+        return Ok(accessTokens);
     }
 }

@@ -4,18 +4,22 @@ using DevHabit.Api.DTOs.Habits;
 using DevHabit.Api.Middleware;
 using DevHabit.Api.Services;
 using DevHabit.Api.Services.Sorting;
+using DevHabit.Api.Settings;
 using FluentValidation;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json.Serialization;
 using Npgsql;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using System.Text;
 
 namespace DevHabit.Api;
 
@@ -122,6 +126,8 @@ public static class DependencyInjection
         builder.Services.AddTransient<DataShapingService>();
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddTransient<LinkService>();
+
+        builder.Services.AddTransient<TokenProvider>();
         return builder;
     }
 
@@ -130,6 +136,29 @@ public static class DependencyInjection
         builder.Services
             .AddIdentity<IdentityUser, IdentityRole>()//指定用户类型和角色类型
             .AddEntityFrameworkStores<AppIdentityDbContext>();
+
+        builder.Services.Configure<JwtAuthOptions>(builder.Configuration.GetSection("Jwt"));
+        var jwtAuthOptions = builder.Configuration.GetSection("Jwt").Get<JwtAuthOptions>() ?? throw new Exception("jwt配置项读取为空！");
+
+        builder.Services
+            .AddAuthentication(opt =>
+            {
+                opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                //如果不设置默认质询方案为jwt方案，应用检测到用户的请求未认证时，会跳转到默认登陆页面
+                opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(opt =>
+            {
+                opt.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidIssuer = jwtAuthOptions.Issuer,
+                    ValidAudience = jwtAuthOptions.Audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtAuthOptions.Key))
+                };
+            });
+
+        builder.Services.AddAuthorization();
+
         return builder;
     }
 }
