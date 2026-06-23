@@ -10,6 +10,15 @@ namespace DevHabit.Api.Migrations.Application
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            //在执行迁移前，需要删除原始数据，以保证数据有效。生产环境中不能使用
+            migrationBuilder.Sql(
+                """
+                DELETE FROM dev_habit.habit_tags;
+                DELETE FROM dev_habit.habits;
+                DELETE FROM dev_habit.tags;
+                """
+                );
+            
             migrationBuilder.DropIndex(
                 name: "ix_tags_name",
                 schema: "dev_habit",
