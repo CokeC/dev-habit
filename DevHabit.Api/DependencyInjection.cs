@@ -128,6 +128,11 @@ public static class DependencyInjection
         builder.Services.AddTransient<LinkService>();
 
         builder.Services.AddTransient<TokenProvider>();
+
+        builder.Services.AddScoped<UserContext>();//只能在当前请求的作用域内访问
+
+        builder.Services.AddMemoryCache();
+
         return builder;
     }
 

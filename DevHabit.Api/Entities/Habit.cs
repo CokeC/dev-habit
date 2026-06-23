@@ -1,10 +1,13 @@
 ﻿using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace DevHabit.Api.Entities;
 
 public sealed class Habit
 {
     public string Id { get; set; } = string.Empty;
+    [NotNull]
+    public string? UserId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public HabitType Type { get; set; }

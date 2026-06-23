@@ -1,28 +1,34 @@
 ﻿using DevHabit.Api.Database;
 using DevHabit.Api.DTOs.Auth;
 using DevHabit.Api.DTOs.Users;
+using DevHabit.Api.Entities;
 using DevHabit.Api.Services;
+using DevHabit.Api.Settings;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Options;
 
 namespace DevHabit.Api.Controllers;
 
 [Route("auth")]
 [ApiController]
 [AllowAnonymous]
-public sealed class AuthController(UserManager<IdentityUser> userManager, ApplicationDbContext appDbContext, AppIdentityDbContext IdDbContext, TokenProvider tokenProvider) : ControllerBase
+public sealed class AuthController(UserManager<IdentityUser> userManager, ApplicationDbContext appDbContext, AppIdentityDbContext idDbContext, TokenProvider tokenProvider, IOptions<JwtAuthOptions> options) : ControllerBase
 {
+    private readonly JwtAuthOptions _jwtAuthOptions = options.Value;
+    
     [HttpPost("register")]
     public async Task<ActionResult<AccessTokensDto>> Register(RegisterUserDto request)
     {
         //创建事务，保证两个数据库同时成功、同时失败
-        using IDbContextTransaction transaction = await IdDbContext.Database.BeginTransactionAsync();
+        using IDbContextTransaction transaction = await idDbContext.Database.BeginTransactionAsync();
         //连接2个数据库
-        appDbContext.Database.SetDbConnection(IdDbContext.Database.GetDbConnection());
+        appDbContext.Database.SetDbConnection(idDbContext.Database.GetDbConnection());
         //让2个数据库使用同一个事务实例
         await appDbContext.Database.UseTransactionAsync(transaction.GetDbTransaction());
         
@@ -60,6 +66,17 @@ public sealed class AuthController(UserManager<IdentityUser> userManager, Applic
         var tokenRequest = new TokenRequest(identityUser.Id, identityUser.Email);
         var accessTokens = tokenProvider.Create(tokenRequest);
 
+        var refreshToken = new RefreshToken
+        {
+            Id = Guid.CreateVersion7(),
+            UserId = identityUser.Id,
+            Token = accessTokens.RefreshToken,
+            ExpiresAtUtc = DateTime.UtcNow.AddDays(_jwtAuthOptions.RefreshTokenExpirationDays)
+        };
+        idDbContext.RefreshTokens.Add(refreshToken);
+
+        await transaction.CommitAsync();
+
         return Ok(accessTokens);
     }
 
@@ -71,6 +88,43 @@ public sealed class AuthController(UserManager<IdentityUser> userManager, Applic
             return Unauthorized();
         var tokenRequest = new TokenRequest(identityUser.Id, request.Email);
         var accessTokens = tokenProvider.Create(tokenRequest);
+
+        var refreshToken = new RefreshToken
+        {
+            Id = Guid.CreateVersion7(),
+            UserId = identityUser.Id,
+            Token = accessTokens.RefreshToken,
+            ExpiresAtUtc = DateTime.UtcNow.AddDays(_jwtAuthOptions.RefreshTokenExpirationDays)
+        };
+        idDbContext.RefreshTokens.Add(refreshToken);
+
+        await idDbContext.SaveChangesAsync();
+
+        return Ok(accessTokens);
+    }
+
+    [HttpPost("refresh")]
+    public async Task<ActionResult<AccessTokensDto>> Refresh(RefreshTokenDto request)
+    {
+        var refreshToken = await idDbContext.RefreshTokens
+            .Include(e => e.User)
+            .FirstOrDefaultAsync(e => e.Token == request.RefreshToken);
+
+        if (refreshToken is null)
+            return Unauthorized();
+
+        if (refreshToken.ExpiresAtUtc < DateTime.UtcNow)
+            return Unauthorized();
+
+        var tokenRequest = new TokenRequest(refreshToken.User.Id, refreshToken.User.Email!);
+
+        var accessTokens = tokenProvider.Create(tokenRequest);
+
+        //保存生成的刷新令牌
+        refreshToken.Token = accessTokens.RefreshToken;
+        refreshToken.ExpiresAtUtc = DateTime.UtcNow.AddDays(_jwtAuthOptions.RefreshTokenExpirationDays);
+
+        await idDbContext.SaveChangesAsync();
 
         return Ok(accessTokens);
     }

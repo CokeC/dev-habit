@@ -11,6 +11,7 @@ public class HabitConfiguration : IEntityTypeConfiguration<Habit>
         builder.HasKey(e => e.Id);
 
         builder.Property(e => e.Id).HasMaxLength(500);
+        builder.Property(e => e.UserId).HasMaxLength(500);
 
         builder.Property(e => e.Name).HasMaxLength(100);
 
@@ -28,5 +29,9 @@ public class HabitConfiguration : IEntityTypeConfiguration<Habit>
         builder.HasMany(e => e.Tags)
             .WithMany()
             .UsingEntity<HabitTag>();
+
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(e => e.UserId);
     }
 }
