@@ -1,11 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace DevHabit.Api.Migrations.Application
 {
     /// <inheritdoc />
-    public partial class Add_UserId_Reference : Migration
+    public partial class Add_UserId_GitHubToken : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -18,7 +19,7 @@ namespace DevHabit.Api.Migrations.Application
                 DELETE FROM dev_habit.tags;
                 """
                 );
-            
+
             migrationBuilder.DropIndex(
                 name: "ix_tags_name",
                 schema: "dev_habit",
@@ -41,13 +42,6 @@ namespace DevHabit.Api.Migrations.Application
                 maxLength: 500,
                 nullable: false,
                 defaultValue: "");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_tags_user_id_name",
-                schema: "dev_habit",
-                table: "tags",
-                columns: new[] { "user_id", "name" },
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_habits_user_id",
@@ -74,11 +68,56 @@ namespace DevHabit.Api.Migrations.Application
                 principalTable: "users",
                 principalColumn: "id",
                 onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.CreateTable(
+                name: "git_hub_access_tokens",
+                schema: "dev_habit",
+                columns: table => new
+                {
+                    id = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    user_id = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    token = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    expires_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    created_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_git_hub_access_tokens", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_git_hub_access_tokens_users_user_id",
+                        column: x => x.user_id,
+                        principalSchema: "dev_habit",
+                        principalTable: "users",
+                        principalColumn: "id");
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_tags_user_id",
+                schema: "dev_habit",
+                table: "tags",
+                column: "user_id",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_git_hub_access_tokens_user_id",
+                schema: "dev_habit",
+                table: "git_hub_access_tokens",
+                column: "user_id",
+                unique: true);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "git_hub_access_tokens",
+                schema: "dev_habit");
+
+            migrationBuilder.DropIndex(
+                name: "ix_tags_user_id",
+                schema: "dev_habit",
+                table: "tags");
+
             migrationBuilder.DropForeignKey(
                 name: "fk_habits_users_user_id",
                 schema: "dev_habit",
@@ -86,11 +125,6 @@ namespace DevHabit.Api.Migrations.Application
 
             migrationBuilder.DropForeignKey(
                 name: "fk_tags_users_user_id",
-                schema: "dev_habit",
-                table: "tags");
-
-            migrationBuilder.DropIndex(
-                name: "ix_tags_user_id_name",
                 schema: "dev_habit",
                 table: "tags");
 

@@ -4,19 +4,20 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace DevHabit.Api.Database.Configurations;
 
-public sealed class TagConfiguration : IEntityTypeConfiguration<Tag>
+public sealed class GitHubAccessTokenConfiguration : IEntityTypeConfiguration<GitHubAccessToken>
 {
-    public void Configure(EntityTypeBuilder<Tag> builder)
+    public void Configure(EntityTypeBuilder<GitHubAccessToken> builder)
     {
         builder.HasKey(e => e.Id);
+
         builder.Property(e => e.Id).HasMaxLength(500);
         builder.Property(e => e.UserId).HasMaxLength(500);
-        builder.Property(e =>e.Name).IsRequired().HasMaxLength(50);
-        builder.Property(e => e.Description).HasMaxLength(500);
+        builder.Property(e => e.Token).HasMaxLength(1000);
+
         builder.HasIndex(e => e.UserId).IsUnique();
-        
+
         builder.HasOne<User>()
-            .WithMany()
-            .HasForeignKey(e => e.UserId);
+            .WithOne()
+            .HasForeignKey<GitHubAccessToken>(e => e.UserId);
     }
 }
