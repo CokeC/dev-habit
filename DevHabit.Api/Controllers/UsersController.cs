@@ -1,4 +1,5 @@
-﻿using DevHabit.Api.Database;
+﻿using DevHabit.Api.Collections;
+using DevHabit.Api.Database;
 using DevHabit.Api.DTOs.Users;
 using DevHabit.Api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -11,7 +12,7 @@ namespace DevHabit.Api.Controllers;
 
 [Route("users")]
 [ApiController]
-[Authorize]
+[Authorize(Roles = Roles.Member)]
 public sealed class UsersController(ApplicationDbContext dbContext, UserContext userContext) : ControllerBase
 {
     [HttpGet("{id}")]

@@ -16,6 +16,7 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     await app.ApplyMigrationsAsync();//在生产环境中不使用此方法进行数据库迁移
+    await app.SeedInitialDataAsync();
 }
 
 app.UseHttpsRedirection();

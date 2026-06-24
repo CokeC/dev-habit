@@ -1,4 +1,5 @@
-﻿using DevHabit.Api.Database;
+﻿using DevHabit.Api.Collections;
+using DevHabit.Api.Database;
 using DevHabit.Api.DTOs.Auth;
 using DevHabit.Api.DTOs.Users;
 using DevHabit.Api.Entities;
@@ -38,15 +39,30 @@ public sealed class AuthController(UserManager<IdentityUser> userManager, Applic
             UserName = request.Name
         };
 
-        var identityResult = await userManager.CreateAsync(identityUser, request.Password);
+        var createResult = await userManager.CreateAsync(identityUser, request.Password);
 
-        if (!identityResult.Succeeded)
+        if (!createResult.Succeeded)
         {
             var extension = new Dictionary<string, object?>
             {
                 {
                     "errors",
-                    identityResult.Errors.ToDictionary(e => e.Code, e => e.Description)
+                    createResult.Errors.ToDictionary(e => e.Code, e => e.Description)
+                }
+            };
+            return Problem(detail: "无法注册用户，请重试！",
+                statusCode: StatusCodes.Status400BadRequest,
+                extensions: extension);
+        }
+
+        var addToRoleResult = await userManager.AddToRoleAsync(identityUser, Roles.Member);
+        if (!addToRoleResult.Succeeded)
+        {
+            var extension = new Dictionary<string, object?>
+            {
+                {
+                    "errors",
+                    addToRoleResult.Errors.ToDictionary(e => e.Code, e => e.Description)
                 }
             };
             return Problem(detail: "无法注册用户，请重试！",
@@ -63,7 +79,7 @@ public sealed class AuthController(UserManager<IdentityUser> userManager, Applic
 
         await transaction.CommitAsync();//如果不调用，所有更改均回滚
 
-        var tokenRequest = new TokenRequest(identityUser.Id, identityUser.Email);
+        var tokenRequest = new TokenRequest(identityUser.Id, identityUser.Email, [Roles.Member]);
         var accessTokens = tokenProvider.Create(tokenRequest);
 
         var refreshToken = new RefreshToken
@@ -86,7 +102,10 @@ public sealed class AuthController(UserManager<IdentityUser> userManager, Applic
         var identityUser = await userManager.FindByEmailAsync(request.Email);
         if (identityUser == null || !await userManager.CheckPasswordAsync(identityUser, request.Password))
             return Unauthorized();
-        var tokenRequest = new TokenRequest(identityUser.Id, request.Email);
+
+        var roles = await userManager.GetRolesAsync(identityUser);
+
+        var tokenRequest = new TokenRequest(identityUser.Id, request.Email, roles);
         var accessTokens = tokenProvider.Create(tokenRequest);
 
         var refreshToken = new RefreshToken
@@ -116,7 +135,9 @@ public sealed class AuthController(UserManager<IdentityUser> userManager, Applic
         if (refreshToken.ExpiresAtUtc < DateTime.UtcNow)
             return Unauthorized();
 
-        var tokenRequest = new TokenRequest(refreshToken.User.Id, refreshToken.User.Email!);
+        var roles = await userManager.GetRolesAsync(refreshToken.User);
+
+        var tokenRequest = new TokenRequest(refreshToken.User.Id, refreshToken.User.Email!, roles);
 
         var accessTokens = tokenProvider.Create(tokenRequest);
 
