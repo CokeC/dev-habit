@@ -14,11 +14,12 @@ public sealed record CreateHabitDto
     public DateOnly? EndDate { get; init; }
     public MilestoneDto? Milestone { get; init; }
 
-    public Habit ToHabit()
+    public Habit ToHabit(string userId)
     {
         return new()
         {
             Id = $"h_{Guid.CreateVersion7()}",//uuid7可排序，对分页有帮助
+            UserId = userId,
             Name = Name,
             Description = Description,
             Type = Type,

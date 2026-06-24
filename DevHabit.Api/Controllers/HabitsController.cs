@@ -27,12 +27,16 @@ namespace DevHabit.Api.Controllers;
     CustomMediaTypeNames.Application.HateoasJson,
     CustomMediaTypeNames.Application.HateoasJsonV1,
     CustomMediaTypeNames.Application.HateoasJsonV2)]
-public sealed class HabitsController(ApplicationDbContext dbContext, LinkService linkService) : ControllerBase
+public sealed class HabitsController(ApplicationDbContext dbContext, LinkService linkService, UserContext userContext) : ControllerBase
 {
     
     [HttpGet]
     public async Task<IActionResult> GetHabits(HabitsQueryParameters query, SortMappingProvider sortMappingProvider, DataShapingService shapingService)
     {
+        var userId = await userContext.GetUserIdAsync();
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized();
+        
         if (!sortMappingProvider.ValidateMappings<HabitDto, Habit>(query.Sort))
             return Problem(statusCode: StatusCodes.Status400BadRequest,
                 detail: $"排序参数不合规：{query.Sort}");
@@ -43,7 +47,7 @@ public sealed class HabitsController(ApplicationDbContext dbContext, LinkService
 
         var sortMappings = sortMappingProvider.GetMappings<HabitDto, Habit>();
 
-        var habitsQuery = dbContext.Habits.AsQueryable();
+        var habitsQuery = dbContext.Habits.Where(e => e.UserId == userId).AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
@@ -84,11 +88,15 @@ public sealed class HabitsController(ApplicationDbContext dbContext, LinkService
     //[MapToApiVersion(1.0)]
     public async Task<IActionResult> GetHabit(string id, [FromQuery] HabitsQueryParameters query, DataShapingService shapingService)
     {
+        var userId = await userContext.GetUserIdAsync();
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized();
+
         if (!shapingService.Validate<HabitDto>(query.Fields))
             return Problem(statusCode: StatusCodes.Status400BadRequest,
                 detail: $"塑形参数不合规：{query.Fields}");
 
-        var habit = await dbContext.Habits.Where(e => e.Id == id).Select(e => e.ToHabitWithTagsDto()).FirstOrDefaultAsync();
+        var habit = await dbContext.Habits.Where(e => e.Id == id && e.UserId == userId).Select(e => e.ToHabitWithTagsDto()).FirstOrDefaultAsync();
         
         if (habit is null)
             return NotFound();
@@ -109,11 +117,15 @@ public sealed class HabitsController(ApplicationDbContext dbContext, LinkService
     [ApiVersion(2.0)]
     public async Task<IActionResult> GetHabitV2(string id, string? fields, [FromHeader(Name = "Accept")] string? accept, DataShapingService shapingService)
     {
+        var userId = await userContext.GetUserIdAsync();
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized();
+
         if (!shapingService.Validate<HabitDto>(fields))
             return Problem(statusCode: StatusCodes.Status400BadRequest,
                 detail: $"塑形参数不合规：{fields}");
 
-        var habit = await dbContext.Habits.Where(e => e.Id == id).Select(e => e.ToHabitWithTagsDtoV2()).FirstOrDefaultAsync();
+        var habit = await dbContext.Habits.Where(e => e.Id == id && e.UserId == userId).Select(e => e.ToHabitWithTagsDtoV2()).FirstOrDefaultAsync();
 
         if (habit is null)
             return NotFound();
@@ -140,13 +152,15 @@ public sealed class HabitsController(ApplicationDbContext dbContext, LinkService
             problem.Extensions.Add("errors", validationResult.ToDictionary());
             return BadRequest(problem);
         }*/
+        var userId = await userContext.GetUserIdAsync();
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized();
 
 
         //下面的这个验证直接抛出异常，用于替换上面的验证处理
         await validator.ValidateAndThrowAsync(request);
 
-
-        var habit = request.ToHabit();
+        var habit = request.ToHabit(userId);
         dbContext.Habits.Add(habit);
         await dbContext.SaveChangesAsync();
         var habitDto = habit.ToHabitDto();
@@ -159,7 +173,11 @@ public sealed class HabitsController(ApplicationDbContext dbContext, LinkService
     [HttpPut("{id}")]
     public async Task<ActionResult> UpdateHabit(string id, UpdateHabitDto request)
     {
-        var habit = await dbContext.Habits.FirstOrDefaultAsync(e => e.Id == id);
+        var userId = await userContext.GetUserIdAsync();
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized();
+
+        var habit = await dbContext.Habits.FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId);
         if (habit is null)
             return NotFound();
         habit.UpdateFromDto(request);
@@ -171,7 +189,11 @@ public sealed class HabitsController(ApplicationDbContext dbContext, LinkService
     [HttpPatch("{id}")]
     public async Task<ActionResult> PatchHabit(string id, JsonPatchDocument<HabitDto> patch)
     {
-        var habit = await dbContext.Habits.FirstOrDefaultAsync(e => e.Id == id);
+        var userId = await userContext.GetUserIdAsync();
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized();
+
+        var habit = await dbContext.Habits.FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId);
         if (habit is null)
             return NotFound();
 
@@ -194,7 +216,11 @@ public sealed class HabitsController(ApplicationDbContext dbContext, LinkService
     [HttpDelete("{id}")]
     public async Task<ActionResult> DeleteHabit(string id)
     {
-        var habit = await dbContext.Habits.FirstOrDefaultAsync(e => e.Id == id);
+        var userId = await userContext.GetUserIdAsync();
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized();
+
+        var habit = await dbContext.Habits.FirstOrDefaultAsync(e => e.Id == id && e.UserId == userId);
         if (habit is null)
             return NotFound();
 
