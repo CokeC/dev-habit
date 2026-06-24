@@ -180,4 +180,20 @@ public static class DependencyInjection
 
         return builder;
     }
+
+    public static WebApplicationBuilder AddCorsPolicy(this WebApplicationBuilder builder)
+    {
+        var corsOptions = builder.Configuration.GetSection(CorsOptions.SectionName).Get<CorsOptions>();
+        
+        builder.Services.AddCors(opt =>
+        {
+            opt.AddPolicy(CorsOptions.PolicyName, p =>
+            {
+                p.WithOrigins(corsOptions!.AllowedOrigins)
+                .AllowAnyMethod()
+                .AllowAnyHeader();
+            });
+        });
+        return builder;
+    }
 }
