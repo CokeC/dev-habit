@@ -23,7 +23,7 @@ public sealed class ETagMiddleware(RequestDelegate next)
 
         await next(context);
 
-        context.Response.Body = initialResponseBody;
+        context.Response.Body = initialResponseBody;//MemoryStream在本方法内结束就会销毁，所以要将Response.Body尽快指向原来的Stream
 
         var isJsonContent = CheckResponseContentType(context);
 
@@ -40,13 +40,10 @@ public sealed class ETagMiddleware(RequestDelegate next)
         SetResponseHeaders();
 
         var ifNoneMatch = GetIfNoneMatch();
-        if (ifNoneMatch != etag)
-        {
+        if (ifNoneMatch == etag)
+            SetResponseOthers(); 
+        else
             await CopyStream(memoryStreamOfResponseBody, initialResponseBody);
-            return;
-        }
-
-        SetResponseOthers();
 
         #region Internal Methods
         void StoreETag()
