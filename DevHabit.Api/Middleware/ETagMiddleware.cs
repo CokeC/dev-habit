@@ -8,14 +8,43 @@ namespace DevHabit.Api.Middleware;
 
 public sealed class ETagMiddleware(RequestDelegate next)
 {
+    private static readonly string[] ConcurrencyCheckMethods = [
+        HttpMethods.Put,
+        HttpMethods.Patch
+        ];//支持乐观锁的Http方法数组
+    
     public async Task InvokeAsync(HttpContext context, InMemoryETagStore eTagStore)
     {
-        var isGetMethod = CheckHttpMethod(context);
-        if (!isGetMethod)
+        var isGetMethod = CheckGetMethod(context);
+        var isSpecialMethods = CheckSpecialMethods();
+
+        if (isSpecialMethods)
+        {
+            var resourceUri = context.Request.Path.Value!;
+            var ifMatch = context.Request.Headers.IfMatch.FirstOrDefault()?.Replace("\"", "");
+            if (!string.IsNullOrEmpty(ifMatch))
+            {
+                var currentETag = eTagStore.GetETag(resourceUri);
+                if (!string.IsNullOrWhiteSpace(currentETag) && ifMatch != currentETag)
+                {
+                    context.Response.StatusCode = StatusCodes.Status412PreconditionFailed;
+                    context.Response.ContentLength = 0;
+                    return;
+                }
+            }
+            else
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                context.Response.ContentLength = 0;
+                return;
+            }
+        }
+        else if (!isGetMethod)
         {
             await next(context);
             return;
         }
+        
 
         var initialResponseBody = context.Response.Body;
         using var memoryStreamOfResponseBody = new MemoryStream();
@@ -46,6 +75,12 @@ public sealed class ETagMiddleware(RequestDelegate next)
             await CopyStream(memoryStreamOfResponseBody, initialResponseBody);
 
         #region Internal Methods
+
+        bool CheckSpecialMethods()
+        {
+            return ConcurrencyCheckMethods.Contains(context.Request.Method);
+        }
+
         void StoreETag()
         {
             var resourceUri = context.Request.Path.Value!;
@@ -70,7 +105,7 @@ public sealed class ETagMiddleware(RequestDelegate next)
         #endregion
     }
 
-    private static bool CheckHttpMethod(HttpContext context)
+    private static bool CheckGetMethod(HttpContext context)
     {
         var isGetMethod = context.Request.Method == HttpMethods.Get;
         return isGetMethod;

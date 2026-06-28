@@ -1,11 +1,13 @@
 ﻿using DevHabit.Api.Database;
 using DevHabit.Api.DTOs.Habits;
 using DevHabit.Api.DTOs.Tags;
+using DevHabit.Api.Services;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace DevHabit.Api.Controllers;
 
@@ -60,13 +62,16 @@ public sealed class TagsController(ApplicationDbContext dbContext) : ControllerB
     }
 
     [HttpPut("{id}")]
-    public async Task<ActionResult> UpdateTag(string id, UpdateTagDto request)
+    public async Task<ActionResult> UpdateTag(string id, UpdateTagDto request, InMemoryETagStore eTagStore)
     {
         var tag = await dbContext.Tags.FirstOrDefaultAsync(e => e.Id == id);
         if (tag is null)
             return NotFound();
         tag.UpdateFromDto(request);
         await dbContext.SaveChangesAsync();
+
+        eTagStore.SetETag(Request.Path.Value!, tag.ToTagDto());
+
         return NoContent();
     }
 
