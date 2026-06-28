@@ -58,6 +58,9 @@ public static class DependencyInjection
         }).AddMvc();
 
         builder.Services.AddOpenApi();
+
+        builder.Services.AddResponseCaching();
+
         return builder;
     }
 
@@ -146,6 +149,8 @@ public static class DependencyInjection
 
         builder.Services.Configure<EncryptionOptions>(builder.Configuration.GetSection("Encryption"));
         builder.Services.AddTransient<EncryptionService>();
+
+        builder.Services.AddSingleton<InMemoryETagStore>();
 
         return builder;
     }

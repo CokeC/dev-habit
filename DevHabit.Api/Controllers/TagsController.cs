@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DevHabit.Api.Controllers;
 
+[ResponseCache(Duration = 120, Location = ResponseCacheLocation.Any)]
 [Route("tags")]
 [ApiController]
 public sealed class TagsController(ApplicationDbContext dbContext) : ControllerBase
