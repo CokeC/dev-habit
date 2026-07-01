@@ -43,7 +43,7 @@ public sealed class GitHubAccessTokenService(ApplicationDbContext dbContext, Enc
         if (gitHubAccessToken is null)
             return null;
 
-        var decryptedToken = encryptionService.Decrypt(gitHubAccessToken.Token);
+        var decryptedToken = encryptionService.Decrypt(gitHubAccessToken.Token!);
 
         return decryptedToken;
     }

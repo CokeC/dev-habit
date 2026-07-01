@@ -1,4 +1,5 @@
-﻿using System.Collections.ObjectModel;
+﻿using DevHabit.Api.Collections;
+using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 
 namespace DevHabit.Api.Entities;
@@ -18,6 +19,7 @@ public sealed class Habit
     public bool IsArchived { get; set; }
     public DateOnly? EndDate { get; set; }
     public Milestone? Milestone { get; set; }
+    public AutomationSource AutomationSource { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public DateTime? UpdatedAtUtc { get; set; }
     public DateTime? LastCompletedAtUtc { get; set; }

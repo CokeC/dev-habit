@@ -1,4 +1,5 @@
-﻿using DevHabit.Api.DTOs.Habits;
+﻿using DevHabit.Api.DTOs.Common;
+using DevHabit.Api.DTOs.Habits;
 using DevHabit.Api.Entities;
 using System.Collections.ObjectModel;
 
@@ -11,11 +12,13 @@ public sealed record TagDto
     public string? Description { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public DateTime? UpdateAtUtc { get; set; }
+    public List<LinkDto> Links { get; set; } = [];
 }
 
 public sealed record TagsCollectionDto
 {
     public required ReadOnlyCollection<TagDto> Data { get; init; }
+    public List<LinkDto> Links { get; set; } = [];
 }
 
 public static class TagExtensions

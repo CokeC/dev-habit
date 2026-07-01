@@ -1,4 +1,5 @@
 ﻿using DevHabit.Api.Database;
+using DevHabit.Api.DTOs.Common;
 using DevHabit.Api.DTOs.Habits;
 using DevHabit.Api.DTOs.Tags;
 using DevHabit.Api.Services;
@@ -14,18 +15,36 @@ namespace DevHabit.Api.Controllers;
 [ResponseCache(Duration = 120, Location = ResponseCacheLocation.Any)]
 [Route("tags")]
 [ApiController]
-public sealed class TagsController(ApplicationDbContext dbContext) : ControllerBase
+public sealed class TagsController(ApplicationDbContext dbContext, LinkService linkService) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<TagsCollectionDto>> GetTags()
+    public async Task<ActionResult<TagsCollectionDto>> GetTags([FromHeader] AcceptHeaderDto acceptHeader)
     {
         var tags = await dbContext.Tags.Select(e => e.ToTagDto()).ToListAsync();
 
-        var habitsCollection = new TagsCollectionDto
+        var tagsCollectionDto = new TagsCollectionDto
         {
             Data = tags.AsReadOnly()
         };
-        return Ok(habitsCollection);
+
+        if (acceptHeader.IncludeLinks)
+        {
+            tagsCollectionDto.Links = CreateLinksForTags(tags.Count);
+            foreach(var tagDto in tagsCollectionDto.Data)
+            {
+                tagDto.Links = CreateLinksForTag(tagDto.Id);
+            }
+        }
+
+        return Ok(tagsCollectionDto);
+    }
+
+    private List<LinkDto> CreateLinksForTag(string id)
+    {
+        List<LinkDto> links = [
+            linkService.Create(nameof(GetTag), "self", HttpMethods.Get, new {id})
+            ];
+        return links;
     }
 
     [HttpGet("{id}")]
@@ -87,5 +106,18 @@ public sealed class TagsController(ApplicationDbContext dbContext) : ControllerB
         await dbContext.SaveChangesAsync();
 
         return NoContent();
+    }
+
+
+    private List<LinkDto> CreateLinksForTags(int tagsCount)
+    {
+        List<LinkDto> links = [
+            linkService.Create(nameof(GetTags), "self", HttpMethods.Get)
+            ];
+        if(tagsCount < 5)
+        {
+            links.Add(linkService.Create(nameof(CreateTag), "create", HttpMethods.Post));
+        }
+        return links;
     }
 }

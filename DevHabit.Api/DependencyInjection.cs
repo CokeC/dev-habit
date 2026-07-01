@@ -1,6 +1,7 @@
 ﻿using Asp.Versioning;
 using DevHabit.Api.Database;
 using DevHabit.Api.DTOs.Habits;
+using DevHabit.Api.Jobs;
 using DevHabit.Api.Middleware;
 using DevHabit.Api.Services;
 using DevHabit.Api.Services.Sorting;
@@ -19,6 +20,7 @@ using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Quartz;
 using System.Net.Http.Headers;
 using System.Text;
 
@@ -185,6 +187,28 @@ public static class DependencyInjection
 
         return builder;
     }
+
+    public static WebApplicationBuilder AddBackgroundJobs(this WebApplicationBuilder builder)
+    {
+        builder.Services.AddQuartz(e =>
+        {
+            e.AddJob<GitHubAutomationSchedulerJob>(opt => opt.WithIdentity("github-automation-scheduler"));
+
+            e.AddTrigger(opt => opt.ForJob("github-automation-scheduler")
+            .WithIdentity("github-automation-scheduler-trigger")
+            .WithSimpleSchedule(s =>
+            {
+                var settings = builder.Configuration.GetSection(GitHubAutomationOptions.SectionName).Get<GitHubAutomationOptions>()!;
+                s.WithIntervalInMinutes(settings.ScanIntervalMinutes)
+                .RepeatForever();
+            }));
+        });
+
+        builder.Services.AddQuartzHostedService(e => e.WaitForJobsToComplete = true);
+
+        return builder;
+    }
+
 
     public static WebApplicationBuilder AddCorsPolicy(this WebApplicationBuilder builder)
     {

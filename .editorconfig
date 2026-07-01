@@ -353,6 +353,9 @@ dotnet_diagnostic.CA1860.severity = none
 # CA1862: 首选使用StringComparison.枚举值来执行不区分大小写的比较
 dotnet_diagnostic.CA1862.severity = suggestion
 
+# CA1873: 避免进行可能成本高昂的日志记录
+dotnet_diagnostic.CA1873.severity = suggestion
+
 # CA2007: Consider calling ConfigureAwait on the awaited task
 dotnet_diagnostic.CA2007.severity = none
 

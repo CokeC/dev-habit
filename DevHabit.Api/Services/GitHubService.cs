@@ -21,13 +21,13 @@ public sealed class GitHubService(IHttpClientFactory httpClientFactory, ILogger<
         return JsonConvert.DeserializeObject<GitHubUserProfileDto>(content);
     }
 
-    public async Task<IReadOnlyList<GitHubEventDto>?> GetUserEventsAsync(string username, string accessToken, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<GitHubEventDto>?> GetUserEventsAsync(string username, string accessToken, int page, int perPage, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(username);
 
         using var client = CreateGitHubClient(accessToken);
 
-        var response = await client.GetAsync($"users/{username}/events?per_page=100", cancellationToken);
+        var response = await client.GetAsync($"users/{username}/events?page={page}&per_page={perPage}", cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
             logger.LogWarning("获取GitHub用户事件失败。状态码：{StatusCode}", response.StatusCode);
