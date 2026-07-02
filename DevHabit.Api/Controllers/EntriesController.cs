@@ -169,6 +169,7 @@ public sealed class EntriesController(ApplicationDbContext dbContext, LinkServic
     }
 
     [HttpPost]
+    [IdempotentRequest]
     public async Task<ActionResult<EntryDto>> CreateEntry(CreateEntryDto createEntryDto, [FromHeader]AcceptHeaderDto acceptHeader, IValidator<CreateEntryDto> validator)
     {
         var userId = await userContext.GetUserIdAsync();
