@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json.Serialization;
 using Npgsql;
@@ -20,6 +21,7 @@ using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Polly;
 using Quartz;
 using Refit;
 using System.Net.Http.Headers;
@@ -143,6 +145,10 @@ public static class DependencyInjection
         builder.Services.AddScoped<GitHubAccessTokenService>();
         builder.Services.AddTransient<GitHubService>();
         builder.Services.AddTransient<RefitGitHubService>();
+
+        builder.Services.AddHttpClient().ConfigureHttpClientDefaults(e => e.AddStandardResilienceHandler());//添加标准弹性处理器，覆盖全局
+        //官方推荐使用标准弹性处理器！！！
+
         builder.Services.AddHttpClient("github")
             .ConfigureHttpClient(client =>
             {
@@ -152,11 +158,42 @@ public static class DependencyInjection
             });
 
         //使用RefitClient以实现与上面的相同的功能
+#pragma warning disable EXTEXP0001 // 类型仅用于评估，在将来的更新中可能会被更改或删除。RemoveAllResilienceHandlers()
+
         builder.Services.AddRefitClient<IGitHubApi>(new RefitSettings
         {
             ContentSerializer = new NewtonsoftJsonContentSerializer()
         }).ConfigureHttpClient(client =>
-            client.BaseAddress = new Uri("https://api.github.com"));
+            client.BaseAddress = new Uri("https://api.github.com"))
+
+
+        //因上面的标准弹性处理器是全局的，后续的自定义弹性管道不能覆盖上面全局的，需用下一行方法移除已存在的弹性处理器
+        .RemoveAllResilienceHandlers()//此方法是实验性质的，需要抑制警告！谨慎使用
+
+
+        //为httpclient定义一个弹性管道
+        //如果遇到异常，弹性策略会启动
+        .AddResilienceHandler("custom", pipe =>
+        {
+            pipe.AddTimeout(TimeSpan.FromSeconds(5));//全局超时策略。所有重试必须在最多5秒内完成
+            pipe.AddRetry(new HttpRetryStrategyOptions
+            {
+                MaxRetryAttempts = 5,
+                BackoffType = DelayBackoffType.Exponential,
+                UseJitter = true,
+                Delay = TimeSpan.FromMilliseconds(500)
+            });
+            //引入断路器，确保下游服务持续可用。如果下游服务多次请求失败，断路器会启动，停止向外部服务发请求
+            pipe.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
+            {
+                SamplingDuration = TimeSpan.FromSeconds(5),
+                FailureRatio = 0.9,
+                MinimumThroughput = 5,
+                BreakDuration = TimeSpan.FromSeconds(5)
+            });
+            pipe.AddTimeout(TimeSpan.FromSeconds(1));//后续api请求及重试必须在最多1秒内完成
+        });
+#pragma warning restore EXTEXP0001 // 类型仅用于评估，在将来的更新中可能会被更改或删除。RemoveAllResilienceHandlers()
 
         builder.Services.Configure<EncryptionOptions>(builder.Configuration.GetSection("Encryption"));
         builder.Services.AddTransient<EncryptionService>();
