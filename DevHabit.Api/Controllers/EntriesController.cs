@@ -8,6 +8,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Trace;
 using System.Dynamic;
@@ -15,6 +16,7 @@ using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace DevHabit.Api.Controllers;
 
+[EnableRateLimiting("default")]
 [Authorize]
 [Route("entries")]
 [ApiController]

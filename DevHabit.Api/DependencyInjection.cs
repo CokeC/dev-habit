@@ -1,6 +1,7 @@
 ﻿using Asp.Versioning;
 using DevHabit.Api.Database;
 using DevHabit.Api.DTOs.Habits;
+using DevHabit.Api.Extensions;
 using DevHabit.Api.Jobs;
 using DevHabit.Api.Middleware;
 using DevHabit.Api.Services;
@@ -11,6 +12,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Http.Resilience;
@@ -26,6 +28,7 @@ using Quartz;
 using Refit;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Threading.RateLimiting;
 
 namespace DevHabit.Api;
 
@@ -259,7 +262,7 @@ public static class DependencyInjection
     public static WebApplicationBuilder AddCorsPolicy(this WebApplicationBuilder builder)
     {
         var corsOptions = builder.Configuration.GetSection(CorsOptions.SectionName).Get<CorsOptions>();
-        
+
         builder.Services.AddCors(opt =>
         {
             opt.AddPolicy(CorsOptions.PolicyName, p =>
@@ -267,6 +270,55 @@ public static class DependencyInjection
                 p.WithOrigins(corsOptions!.AllowedOrigins)
                 .AllowAnyMethod()
                 .AllowAnyHeader();
+            });
+        });
+        return builder;
+    }
+
+    public static WebApplicationBuilder AddRateLimiting(this WebApplicationBuilder builder)
+    {
+        builder.Services.AddRateLimiter(opt =>
+        {
+            opt.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+            //请求受限后需要自定义的操作
+            opt.OnRejected = async (context, token) =>
+            {
+                if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out TimeSpan retryAfter))
+                {
+                    context.HttpContext.Response.Headers.RetryAfter = $"{retryAfter.TotalSeconds}";
+
+                    var problemDetailsFactory = context.HttpContext.RequestServices.GetRequiredService<ProblemDetailsFactory>();
+                    var problemDetails = problemDetailsFactory.CreateProblemDetails(context.HttpContext,
+                        StatusCodes.Status429TooManyRequests,
+                        "请求过多！",
+                        detail: $"请求过多！请在{retryAfter.TotalSeconds}秒后再试。");
+                    await context.HttpContext.Response.WriteAsJsonAsync(problemDetails, token);
+                }
+            };
+
+            opt.AddPolicy("default", context =>
+            {
+                var identityId = context.User.GetIdentityId();
+                if (!string.IsNullOrEmpty(identityId))
+                {
+                    return RateLimitPartition.GetTokenBucketLimiter(identityId, _ =>
+                    new TokenBucketRateLimiterOptions
+                    {
+                        TokenLimit = 100,
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 5,
+                        ReplenishmentPeriod = TimeSpan.FromMinutes(1),
+                        TokensPerPeriod = 25
+                    });//对于认证用户，使用令牌桶限制器
+                }
+
+                return RateLimitPartition.GetFixedWindowLimiter("anonymous", _ =>
+                    new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 5,
+                        Window = TimeSpan.FromMinutes(1)
+                    });//配置为每分钟只能发5个请求
             });
         });
         return builder;

@@ -12,7 +12,8 @@ builder.AddApiServices()
     .AddApplicationServices()
     .AddAuthenticationServices()
     .AddBackgroundJobs()
-    .AddCorsPolicy();
+    .AddCorsPolicy()
+    .AddRateLimiting();
 
 var app = builder.Build();
 
@@ -33,6 +34,9 @@ app.UseCors(CorsOptions.PolicyName);
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseRateLimiter();//速率限制器可放在管道的不同位置，依实际情况添加。
+//仍需在控制器中添加EnableRateLimiting属性
 
 app.UseMiddleware<ETagMiddleware>();
 
