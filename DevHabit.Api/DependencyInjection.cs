@@ -251,6 +251,14 @@ public static class DependencyInjection
                 s.WithIntervalInMinutes(settings.ScanIntervalMinutes)
                 .RepeatForever();
             }));
+
+
+            //清理导入任务
+            e.AddJob<CleanupEntryImportJobsJob>(opt => opt.WithIdentity("cleanup-entry-imports"));
+            e.AddTrigger(opt => opt
+                .ForJob("cleanup-entry-imports")
+                .WithIdentity("cleanup-entry-imports-trigger")
+                .WithCronSchedule("0 0 3 * * ?", x => x.InTimeZone(TimeZoneInfo.Utc)));
         });
 
         builder.Services.AddQuartzHostedService(e => e.WaitForJobsToComplete = true);
