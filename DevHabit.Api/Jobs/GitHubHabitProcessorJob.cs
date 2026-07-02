@@ -12,7 +12,8 @@ namespace DevHabit.Api.Jobs;
 public sealed class GitHubHabitProcessorJob(
     ApplicationDbContext dbContext,
     GitHubAccessTokenService gitHubAccessTokenService,
-    GitHubService gitHubService,
+    //GitHubService gitHubService,
+    RefitGitHubService gitHubService,
     ILogger<GitHubHabitProcessorJob> logger) : IJob
 {
     private const string PushEventType = "PushEvent";

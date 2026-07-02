@@ -9,7 +9,12 @@ namespace DevHabit.Api.Controllers;
 
 [Route("github")]
 [ApiController]
-public class GitHubController(GitHubAccessTokenService gitHubAccessTokenService, GitHubService gitHubService, UserContext userContext, LinkService linkService) : ControllerBase
+public class GitHubController(
+    GitHubAccessTokenService gitHubAccessTokenService,
+    //GitHubService gitHubService,
+    RefitGitHubService gitHubService,//平替上一行的服务
+    UserContext userContext,
+    LinkService linkService) : ControllerBase
 {
     [HttpPut("personal-access-token")]
     public async Task<IActionResult> StoreAccessToken(StoreGitHubAccessTokenDto storeGitHubAccessTokenDto)

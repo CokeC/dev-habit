@@ -21,6 +21,7 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Quartz;
+using Refit;
 using System.Net.Http.Headers;
 using System.Text;
 
@@ -141,6 +142,7 @@ public static class DependencyInjection
 
         builder.Services.AddScoped<GitHubAccessTokenService>();
         builder.Services.AddTransient<GitHubService>();
+        builder.Services.AddTransient<RefitGitHubService>();
         builder.Services.AddHttpClient("github")
             .ConfigureHttpClient(client =>
             {
@@ -148,6 +150,13 @@ public static class DependencyInjection
                 //client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("DevHabit", "1.0"));
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
             });
+
+        //使用RefitClient以实现与上面的相同的功能
+        builder.Services.AddRefitClient<IGitHubApi>(new RefitSettings
+        {
+            ContentSerializer = new NewtonsoftJsonContentSerializer()
+        }).ConfigureHttpClient(client =>
+            client.BaseAddress = new Uri("https://api.github.com"));
 
         builder.Services.Configure<EncryptionOptions>(builder.Configuration.GetSection("Encryption"));
         builder.Services.AddTransient<EncryptionService>();

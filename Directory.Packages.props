@@ -24,6 +24,8 @@
     <PackageVersion Include="Quartz" Version="3.18.2" />
     <PackageVersion Include="Quartz.Extensions.DependencyInjection" Version="3.18.2" />
     <PackageVersion Include="Quartz.Extensions.Hosting" Version="3.18.2" />
+    <PackageVersion Include="Refit.HttpClientFactory" Version="13.0.0" />
+    <PackageVersion Include="Refit.Newtonsoft.Json" Version="13.0.0" />
     <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.27.0.140913" />
     <PackageVersion Include="System.Linq.Dynamic.Core" Version="1.7.2" />
   </ItemGroup>
