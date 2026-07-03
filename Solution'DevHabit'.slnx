@@ -2,6 +2,9 @@
   <Folder Name="/src/">
     <Project Path="DevHabit.Api/DevHabit.Api.csproj" />
   </Folder>
+  <Folder Name="/test/">
+    <Project Path="DevHabit.UnitTests/DevHabit.UnitTests.csproj" Id="ccd4623e-507f-4cbf-83f6-7bfefb52620d" />
+  </Folder>
   <Folder Name="/解决方案项/">
     <File Path=".editorconfig" />
     <File Path="Directory.Build.props" />
