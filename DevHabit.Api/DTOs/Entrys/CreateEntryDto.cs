@@ -10,7 +10,6 @@ public class CreateEntryDto
     public string? UserId { get; set; }
     public required int Value { get; set; }
     public string? Notes { get; set; }
-    public required bool IsArchived { get; set; }
     public required DateOnly Date { get; set; }
     public DateTime? UpdatedAtUtc { get; set; }
 
@@ -23,7 +22,7 @@ public class CreateEntryDto
             HabitId = habit.Id,
             Value = Value,
             Notes = Notes,
-            IsArchived = IsArchived,
+            IsArchived = false,
             Date = Date,
             CreatedAtUtc = DateTime.UtcNow,
             Habit = habit
@@ -35,6 +34,7 @@ public sealed class CreateEntryDtoValidator : AbstractValidator<CreateEntryDto>
 {
     public CreateEntryDtoValidator()
     {
+        RuleFor(e => e.HabitId).NotEmpty();
         RuleFor(e => e.Value).NotEmpty();
     }
 }
