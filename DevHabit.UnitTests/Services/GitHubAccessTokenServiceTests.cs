@@ -40,7 +40,7 @@ public class GitHubAccessTokenServiceTests : IDisposable
             ExpiresInDays = 30
         };
 
-        await _gitHubAccessTokenService.StoreAsync(userId, dto, CancellationToken.None);
+        await _gitHubAccessTokenService.StoreAsync(userId, dto, TestContext.Current.CancellationToken);
 
         var token = await _context.GitHubAccessTokens.SingleOrDefaultAsync(CancellationToken.None);
         Assert.NotNull(token);

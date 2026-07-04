@@ -21,7 +21,7 @@ public class CreateEntryDtoValidatorTests
         };
 
         //Act
-        var validationResult = await _validator.ValidateAsync(dto, CancellationToken.None);
+        var validationResult = await _validator.ValidateAsync(dto, TestContext.Current.CancellationToken);
 
         //Assert
         Assert.True(validationResult.IsValid);
@@ -40,7 +40,7 @@ public class CreateEntryDtoValidatorTests
         };
 
         //Act
-        var validationResult = await _validator.ValidateAsync(dto, CancellationToken.None);
+        var validationResult = await _validator.ValidateAsync(dto, TestContext.Current.CancellationToken);
 
         //Assert
         Assert.False(validationResult.IsValid);

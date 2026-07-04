@@ -1,0 +1,6 @@
+﻿
+namespace DevHabit.IntegrationTests.Infrastructure;
+
+//[CollectionDefinition(nameof(IntegrationTestCollection))]
+//若使用上面的特性，则所有拥有相同名称Collection特性的测试WebAppFactory都会使用同一个实例WebAppFactory。这样做的优点是减少资源消耗，因为每一个实例WebAppFactory都会创建一个容器。缺点是会对使用同一个实例的所有测试方法产生并发冲突的风险，所以慎用
+public sealed class IntegrationTestCollection : ICollectionFixture<DevHabitWebAppFactory>;

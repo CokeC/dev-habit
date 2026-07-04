@@ -76,9 +76,7 @@ public sealed class AuthController(UserManager<IdentityUser> userManager, Applic
         appDbContext.Users.Add(user);
 
         await appDbContext.SaveChangesAsync();
-
-        await transaction.CommitAsync();//如果不调用，所有更改均回滚
-
+        
         var tokenRequest = new TokenRequest(identityUser.Id, identityUser.Email, [Roles.Member]);
         var accessTokens = tokenProvider.Create(tokenRequest);
 
@@ -91,7 +89,7 @@ public sealed class AuthController(UserManager<IdentityUser> userManager, Applic
         };
         idDbContext.RefreshTokens.Add(refreshToken);
 
-        await transaction.CommitAsync();
+        await transaction.CommitAsync();//如果不调用，所有更改均回滚
 
         return Ok(accessTokens);
     }

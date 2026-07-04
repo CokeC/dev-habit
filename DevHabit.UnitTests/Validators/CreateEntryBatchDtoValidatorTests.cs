@@ -28,7 +28,7 @@ public class CreateEntryBatchDtoValidatorTests
                 ]
         };
 
-        var result = await _validator.TestValidateAsync(dto, null, CancellationToken.None);
+        var result = await _validator.TestValidateAsync(dto, null, TestContext.Current.CancellationToken);
 
         result.ShouldNotHaveAnyValidationErrors();
     }
@@ -41,7 +41,7 @@ public class CreateEntryBatchDtoValidatorTests
             Entries = []
         };
 
-        var result = await _validator.TestValidateAsync(dto, null, CancellationToken.None);
+        var result = await _validator.TestValidateAsync(dto, null, TestContext.Current.CancellationToken);
 
         result.ShouldHaveValidationErrorFor(e => e.Entries);
     }

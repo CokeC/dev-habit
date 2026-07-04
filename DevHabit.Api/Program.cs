@@ -20,7 +20,10 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    //await app.ApplyMigrationsAsync();//在生产环境中不使用此方法进行数据库迁移
+
+    await app.ApplyMigrationsAsync();//在生产环境中不使用此方法进行数据库迁移
+    //但在集成测试中需要此方法！！！
+
     await app.SeedInitialDataAsync();
 }
 
@@ -43,3 +46,5 @@ app.UseMiddleware<ETagMiddleware>();
 app.MapControllers();
 
 await app.RunAsync();
+
+//public partial class Program;若集成测试未能正确引用Program，启用此行

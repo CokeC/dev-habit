@@ -3,6 +3,7 @@
     <Project Path="DevHabit.Api/DevHabit.Api.csproj" />
   </Folder>
   <Folder Name="/test/">
+    <Project Path="DevHabit.IntegrationTests/DevHabit.IntegrationTests.csproj" Id="ddc23a87-9e1c-44af-9628-e7937469b210" />
     <Project Path="DevHabit.UnitTests/DevHabit.UnitTests.csproj" Id="ccd4623e-507f-4cbf-83f6-7bfefb52620d" />
   </Folder>
   <Folder Name="/解决方案项/">
