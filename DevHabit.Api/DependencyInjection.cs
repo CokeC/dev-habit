@@ -155,7 +155,7 @@ public static class DependencyInjection
         builder.Services.AddHttpClient("github")
             .ConfigureHttpClient(client =>
             {
-                client.BaseAddress = new Uri("https://api.github.com");
+                client.BaseAddress = new Uri(builder.Configuration.GetSection("GitHub:BaseUrl").Get<string>()!);
                 //client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("DevHabit", "1.0"));
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
             });
@@ -167,7 +167,7 @@ public static class DependencyInjection
         {
             ContentSerializer = new NewtonsoftJsonContentSerializer()
         }).ConfigureHttpClient(client =>
-            client.BaseAddress = new Uri("https://api.github.com"))
+            client.BaseAddress = new Uri(builder.Configuration.GetSection("GitHub:BaseUrl").Get<string>()!))
 
 
         //因上面的标准弹性处理器是全局的，后续的自定义弹性管道不能覆盖上面全局的，需用下一行方法移除已存在的弹性处理器

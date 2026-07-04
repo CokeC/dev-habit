@@ -2,9 +2,12 @@
 using DevHabit.Api.Database;
 using DevHabit.Api.DTOs.Auth;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using WireMock.Server;
 
 namespace DevHabit.IntegrationTests.Infrastructure;
 
@@ -13,6 +16,8 @@ namespace DevHabit.IntegrationTests.Infrastructure;
 public abstract class IntegrationTestFixture(DevHabitWebAppFactory factory) : IClassFixture<DevHabitWebAppFactory>
 {
     private HttpClient? _authorizedClient;
+
+    public WireMockServer WireMockServer => factory.GetWireMockServer();
     public HttpClient CreateClient() => factory.CreateClient();
 
     public async Task<HttpClient> CreateAuthenticatedClientAsync(string email = "test@test.com", string password = "Test123!")
@@ -60,5 +65,35 @@ public abstract class IntegrationTestFixture(DevHabitWebAppFactory factory) : IC
 
         _authorizedClient = client;
         return client;
+    }
+
+    protected async Task CleanupDatabaseAsync()
+    {
+        using var scope = factory.Services.CreateScope();
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        if (connectionString == null)
+            throw new InvalidOperationException("数据库连接字符串未找到！");
+
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync();
+
+        await using var command = new NpgsqlCommand(@"
+            DO $$
+            BEGIN
+                -- Truncate application tables
+                TRUNCATE TABLE dev_habit.entries CASCADE;
+                TRUNCATE TABLE dev_habit.entry_import_jobs CASCADE;
+                TRUNCATE TABLE dev_habit.tags CASCADE;
+                TRUNCATE TABLE dev_habit.habits CASCADE;
+                TRUNCATE TABLE dev_habit.users CASCADE;
+            
+                -- Truncate identity tables
+                TRUNCATE TABLE identity.asp_net_users CASCADE;
+                TRUNCATE TABLE identity.refresh_tokens CASCADE;
+            ", connection);
+
+        await command.ExecuteNonQueryAsync();
     }
 }

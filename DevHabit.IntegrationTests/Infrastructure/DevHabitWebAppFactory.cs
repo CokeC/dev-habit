@@ -4,7 +4,9 @@ using DotNet.Testcontainers.Builders;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using System.Diagnostics.CodeAnalysis;
 using Testcontainers.PostgreSql;
+using WireMock.Server;
 
 namespace DevHabit.IntegrationTests.Infrastructure;
 
@@ -21,10 +23,16 @@ public class DevHabitWebAppFactory : WebApplicationFactory<Program>, IAsyncLifet
         //.WithExposedPort(5432)
         .Build();
 
+    private WireMockServer? _wireMockServer;
+
+    public WireMockServer GetWireMockServer() => _wireMockServer!;
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         //使用下面的数据库连接字符串，以代替原来应用中的相同配置项
         builder.UseSetting("ConnectionStrings:DefaultConnection", _postgresContainer.GetConnectionString());
+
+        builder.UseSetting("GitHub:BaseUrl", _wireMockServer!.Urls[0]);
     }
 
 
@@ -33,11 +41,16 @@ public class DevHabitWebAppFactory : WebApplicationFactory<Program>, IAsyncLifet
         await _postgresContainer.StartAsync();
 
         //await _postgresContainer.ExecScriptAsync("script");//可以在此执行初始化数据库代码，以替代原来在program中执行的迁移、初始化代码
+
+
+        _wireMockServer = WireMockServer.Start();
     }
 
     //因WebApplicationFactory已实现DisposeAsync()，要实现IAsyncLifetime的同名方法，必须加"new"
     public new async ValueTask DisposeAsync()
     {
         await _postgresContainer.StopAsync();
+
+        _wireMockServer!.Stop();
     }
 }

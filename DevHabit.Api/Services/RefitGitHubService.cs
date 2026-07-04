@@ -20,7 +20,7 @@ public sealed class RefitGitHubService(IGitHubApi gitHubApi, ILogger<RefitGitHub
         return response.Content;
     }
 
-    public async Task<IReadOnlyList<GitHubEventDto>?> GetUserEventsAsync(string username, string accessToken, int page, int perPage, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<GitHubEventDto>?> GetUserEventsAsync(string username, string accessToken, int page = 1, int perPage = 10, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(username);
 
