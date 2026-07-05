@@ -13,9 +13,18 @@ namespace DevHabit.Api.Controllers;
 [Route("users")]
 [ApiController]
 [Authorize(Roles = Roles.Member)]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(StatusCodes.Status404NotFound)]
 public sealed class UsersController(ApplicationDbContext dbContext, UserContext userContext) : ControllerBase
 {
+    /// <summary>
+    /// 获得用户信息
+    /// </summary>
+    /// <param name="id">用户唯一标识符</param>
+    /// <returns>用户信息</returns>
     [HttpGet("{id}")]
+    [ProducesResponseType<UserDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<UserDto>> GetUserById(string id)
     {
         var userId = await userContext.GetUserIdAsync();

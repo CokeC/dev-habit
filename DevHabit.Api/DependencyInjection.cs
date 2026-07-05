@@ -27,6 +27,7 @@ using Polly;
 using Quartz;
 using Refit;
 using System.Net.Http.Headers;
+using System.Reflection;
 using System.Text;
 using System.Threading.RateLimiting;
 
@@ -70,6 +71,10 @@ public static class DependencyInjection
         builder.Services.AddSwaggerGen(opt =>
         {
             opt.ResolveConflictingActions(description => description.First());
+
+            var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+            opt.IncludeXmlComments(xmlPath);
         });
 
         builder.Services.AddResponseCaching();
