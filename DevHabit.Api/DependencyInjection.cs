@@ -64,18 +64,14 @@ public static class DependencyInjection
             opt.ApiVersionReader = ApiVersionReader.Combine(
                 new MediaTypeApiVersionReader(),
                 new MediaTypeApiVersionReaderBuilder().Template("application/vnd.dev-habit.hateoas.{version}+json").Build());
-        }).AddMvc();
+        }).AddMvc()
+            .AddApiExplorer();
 
         //builder.Services.AddOpenApi();
 
-        builder.Services.AddSwaggerGen(opt =>
-        {
-            opt.ResolveConflictingActions(description => description.First());
-
-            var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-            opt.IncludeXmlComments(xmlPath);
-        });
+        builder.Services.AddSwaggerGen();//配置移到单独的文件中ConfigureSwaggerGenOptions
+        builder.Services.ConfigureOptions<ConfigureSwaggerGenOptions>();
+        builder.Services.ConfigureOptions<ConfigureSwaggerUIOptions>();
 
         builder.Services.AddResponseCaching();
 
