@@ -19,7 +19,11 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    //app.MapOpenApi();
+
+    //使用外部Swagger替代内置的openapi工具
+    app.UseSwagger();
+    app.UseSwaggerUI();
 
     await app.ApplyMigrationsAsync();//在生产环境中不使用此方法进行数据库迁移
     //但在集成测试中需要此方法！！！

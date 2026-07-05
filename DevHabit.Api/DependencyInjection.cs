@@ -65,7 +65,12 @@ public static class DependencyInjection
                 new MediaTypeApiVersionReaderBuilder().Template("application/vnd.dev-habit.hateoas.{version}+json").Build());
         }).AddMvc();
 
-        builder.Services.AddOpenApi();
+        //builder.Services.AddOpenApi();
+
+        builder.Services.AddSwaggerGen(opt =>
+        {
+            opt.ResolveConflictingActions(description => description.First());
+        });
 
         builder.Services.AddResponseCaching();
 

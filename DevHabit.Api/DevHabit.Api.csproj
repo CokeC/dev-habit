@@ -34,13 +34,14 @@
     <PackageReference Include="Quartz.Extensions.Hosting" />
     <PackageReference Include="Refit.HttpClientFactory" />
     <PackageReference Include="Refit.Newtonsoft.Json" />
+    <PackageReference Include="Swashbuckle.AspNetCore" />
     <PackageReference Include="System.Linq.Dynamic.Core" />
   </ItemGroup>
 
   <ItemGroup>
-	<InternalsVisibleTo Include="DevHabit.UnitTests"/>
-	<InternalsVisibleTo Include="DevHabit.IntegrationTests"/>
-	  <InternalsVisibleTo Include="DevHabit.FunctionalTests"/>
+	<InternalsVisibleTo Include="DevHabit.UnitTests" />
+	<InternalsVisibleTo Include="DevHabit.IntegrationTests" />
+	  <InternalsVisibleTo Include="DevHabit.FunctionalTests" />
   </ItemGroup>
 	
 </Project>
