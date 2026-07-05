@@ -2,6 +2,7 @@ using DevHabit.Api;
 using DevHabit.Api.Extensions;
 using DevHabit.Api.Middleware;
 using DevHabit.Api.Settings;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +25,11 @@ if (app.Environment.IsDevelopment())
     //使用外部Swagger替代内置的openapi工具
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    app.MapScalarApiReference(opt =>
+    {
+        opt.WithOpenApiRoutePattern("/swagger/1.0/swagger.json");//若使用内置的OpenApi工具，则不用此配置。使用Swagger需要配置
+    });
 
     await app.ApplyMigrationsAsync();//在生产环境中不使用此方法进行数据库迁移
     //但在集成测试中需要此方法！！！
